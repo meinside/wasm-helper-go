@@ -53,5 +53,5 @@ func main() {
 }
 ```
 
-For more, see the example application and related files in sample/.
+For more, see the example application and related files in [sample/](https://github.com/meinside/wasm-helper-go/tree/master/sample).
 
