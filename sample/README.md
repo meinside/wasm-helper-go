@@ -1,4 +1,4 @@
-# wasm-helper/sample
+# wasm-helper-go/sample
 
 Sample codes for wasm-helper.
 
