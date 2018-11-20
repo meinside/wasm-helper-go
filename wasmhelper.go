@@ -1,8 +1,8 @@
-// +build js,wasm
-
 // WASM helper library for Golang
 //
 // (open files with: `$ GOOS=js GOARCH=wasm vi __FILENAME__`)
+
+// +build js,wasm
 
 package wasmhelper
 
@@ -303,6 +303,23 @@ func (h *WasmHelper) Invoke(function js.Value, args ...interface{}) js.Value {
 // print log to the console
 func printLog(format string, v ...interface{}) {
 	log.Printf(format, v...)
+}
+
+// ToArray converts given value to array (returns nil on error)
+func ToArray(value js.Value) []js.Value {
+	// undefined / null check
+	if value == js.Undefined() || value == js.Null() {
+		printLog("Error: could not convert undefined or nil value to array")
+
+		return nil
+	}
+
+	array := make([]js.Value, value.Length())
+	for i := range array {
+		array[i] = value.Index(i)
+	}
+
+	return array
 }
 
 // Prettify returns JSONized string of given value
