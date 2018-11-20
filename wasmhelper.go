@@ -150,6 +150,7 @@ func (h *WasmHelper) Set(name string, value interface{}) bool {
 		parentNames := names[:count-1]
 		parent, _ = h.get(js.Null(), parentNames)
 
+		// undefined / null check
 		if parent == js.Undefined() || parent == js.Null() {
 			printLog("Error: could not set value, '%s' is undefined or null", strings.Join(parentNames, "."))
 
@@ -178,6 +179,7 @@ func (h *WasmHelper) SetOn(obj js.Value, propertyName string, value interface{})
 		printLog("Setting value: %v on %v for name: '%s'", value, obj, propertyName)
 	}
 
+	// undefined / null check
 	if obj == js.Undefined() || obj == js.Null() {
 		printLog("Error: could not set value: '%v' for name: '%s' on object which is undefined or null", value, propertyName)
 
@@ -206,6 +208,7 @@ func (h *WasmHelper) Call(name string, args ...interface{}) js.Value {
 		parent = js.Global()
 	}
 
+	// undefined / null check
 	if parent == js.Undefined() || parent == js.Null() {
 		printLog("Error: could not call: '%s' on a parent which is undefined or null", name)
 
@@ -213,11 +216,15 @@ func (h *WasmHelper) Call(name string, args ...interface{}) js.Value {
 	}
 
 	function := parent.Get(funcName)
+
+	// undefined / null check
 	if function == js.Undefined() || function == js.Null() {
 		printLog("Error: could not call: '%s' which is undefined or null", funcName)
 
 		return function
 	}
+
+	// type check
 	if function.Type() != js.TypeFunction {
 		printLog("Error: could not call '%s' which is not a function", name)
 
