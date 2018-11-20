@@ -1,6 +1,6 @@
 # wasm-helper-go/sample
 
-Sample codes for wasm-helper.
+Sample codes for [wasm-helper-go](https://github.com/meinside/wasm-helper-go).
 
 ## Contents
 
