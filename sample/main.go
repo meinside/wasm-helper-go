@@ -33,7 +33,7 @@ func main() {
 
 	// register callback functions,
 	helper.RegisterCallbacks(map[string]wh.WasmCallback{
-		"initializeCounter": func(args []js.Value) {
+		"initializeCounter": func(this js.Value, args []js.Value) interface{} {
 			// set initial counter value,
 			helper.Set("count", 0)
 
@@ -45,8 +45,10 @@ func main() {
 					helper.SetOn(countLabel, "innerHTML", count.Int())
 				}
 			}
+
+			return nil
 		},
-		"increaseCounter": func(args []js.Value) {
+		"increaseCounter": func(this js.Value, args []js.Value) interface{} {
 			// increase counter,
 			count := helper.Get("count")
 			if count != js.Undefined() && count != js.Null() {
@@ -59,16 +61,20 @@ func main() {
 					helper.SetOn(countLabel, "innerHTML", count.Int())
 				}
 			}
+
+			return nil
 		},
 	})
 
 	// add event listeners,
 	button := helper.Call("document.getElementById", "button")
 	if button != js.Undefined() && button != js.Null() {
-		helper.CallOn(button, "addEventListener", "click", js.NewCallback(func(args []js.Value) {
+		helper.CallOn(button, "addEventListener", "click", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 			log.Printf("button clicked")
 
 			helper.Call("increaseCounter")
+
+			return nil
 		}))
 	}
 
