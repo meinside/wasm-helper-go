@@ -34,8 +34,10 @@ func main() {
 
 	// set callback functions
 	helper.RegisterCallbacks(map[string]wh.WasmCallback{
-		"showAlert": func(args []js.Value) {
+		"showAlert": func(this js.Value, args []js.Value) interface{} {
 			helper.Call("alert", args[0].String())
+
+			return nil
 		},
 	})
 
