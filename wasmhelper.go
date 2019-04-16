@@ -21,7 +21,7 @@ type WasmHelper struct {
 }
 
 // WasmCallback function type
-type WasmCallback func(args []js.Value)
+type WasmCallback func(this js.Value, args []js.Value) interface{}
 
 // New returns a new WasmHelper struct
 func New() *WasmHelper {
@@ -43,7 +43,7 @@ func (h *WasmHelper) RegisterCallbacks(callbacks map[string]WasmCallback) {
 	}
 
 	for name, callback := range callbacks {
-		h.Set(name, js.NewCallback(callback))
+		h.Set(name, js.FuncOf(callback))
 	}
 }
 
