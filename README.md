@@ -44,7 +44,7 @@ func main() {
 	// alert window location,
 	var windowLocation = "unknown"
 	location := helper.Get("window.location")
-	if location != js.Undefined() && location != js.Null() {
+	if !location.IsUndefined() && !location.IsNull() {
 		windowLocation = location.String()
 
 		helper.Call("showAlert", fmt.Sprintf("window.location = %s", windowLocation))

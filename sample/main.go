@@ -22,11 +22,11 @@ func main() {
 	// show window.location,
 	var windowLocation = "unknown"
 	location := helper.Get("window.location")
-	if location != js.Undefined() && location != js.Null() {
+	if !location.IsUndefined() && !location.IsNull() {
 		windowLocation = location.String()
 
 		locationLabel := helper.Call("document.getElementById", "location")
-		if locationLabel != js.Undefined() && locationLabel != js.Null() {
+		if !locationLabel.IsUndefined() && !locationLabel.IsNull() {
 			helper.SetOn(locationLabel, "innerHTML", windowLocation)
 		}
 	}
@@ -39,9 +39,9 @@ func main() {
 
 			// and show it
 			count := helper.Get("count")
-			if count != js.Undefined() && count != js.Null() {
+			if !count.IsUndefined() && !count.IsNull() {
 				countLabel := helper.Call("document.getElementById", "counter")
-				if countLabel != js.Undefined() && countLabel != js.Null() {
+				if !countLabel.IsUndefined() && !countLabel.IsNull() {
 					helper.SetOn(countLabel, "innerHTML", count.Int())
 				}
 			}
@@ -51,13 +51,13 @@ func main() {
 		"increaseCounter": func(this js.Value, args []js.Value) interface{} {
 			// increase counter,
 			count := helper.Get("count")
-			if count != js.Undefined() && count != js.Null() {
+			if !count.IsUndefined() && !count.IsNull() {
 				count = js.ValueOf(count.Int() + 1)
 				helper.Set("count", count) // count ++
 
 				// and show it
 				countLabel := helper.Call("document.getElementById", "counter")
-				if countLabel != js.Undefined() && countLabel != js.Null() {
+				if !countLabel.IsUndefined() && !countLabel.IsNull() {
 					helper.SetOn(countLabel, "innerHTML", count.Int())
 				}
 			}
@@ -68,7 +68,7 @@ func main() {
 
 	// add event listeners,
 	button := helper.Call("document.getElementById", "button")
-	if button != js.Undefined() && button != js.Null() {
+	if !button.IsUndefined() && !button.IsNull() {
 		helper.CallOn(button, "addEventListener", "click", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 			log.Printf("button clicked")
 

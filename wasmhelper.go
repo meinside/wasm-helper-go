@@ -106,7 +106,7 @@ func (h *WasmHelper) get(parent js.Value, names []string) (value js.Value, remai
 	}
 
 	// parent
-	if parent == js.Undefined() || parent == js.Null() {
+	if parent.IsUndefined() || parent.IsNull() {
 		if h.verbose {
 			printLog("Parent not given, using global for names: %s", Prettify(names))
 		}
@@ -116,11 +116,11 @@ func (h *WasmHelper) get(parent js.Value, names []string) (value js.Value, remai
 
 	// child
 	child := parent.Get(names[0])
-	if child == js.Undefined() {
+	if child.IsUndefined() {
 		printLog("Error: '%s' is undefined", names[0])
 
 		return child, nil
-	} else if child == js.Null() {
+	} else if child.IsNull() {
 		printLog("Error: '%s' is null", names[0])
 
 		return child, nil
@@ -151,7 +151,7 @@ func (h *WasmHelper) Set(name string, value interface{}) bool {
 		parent, _ = h.get(js.Null(), parentNames)
 
 		// undefined / null check
-		if parent == js.Undefined() || parent == js.Null() {
+		if parent.IsUndefined() || parent.IsNull() {
 			printLog("Error: could not set value, '%s' is undefined or null", strings.Join(parentNames, "."))
 
 			return false
@@ -180,7 +180,7 @@ func (h *WasmHelper) SetOn(obj js.Value, propertyName string, value interface{})
 	}
 
 	// undefined / null check
-	if obj == js.Undefined() || obj == js.Null() {
+	if obj.IsUndefined() || obj.IsNull() {
 		printLog("Error: could not set value: '%v' for name: '%s' on object which is undefined or null", value, propertyName)
 
 		return false
@@ -209,7 +209,7 @@ func (h *WasmHelper) Call(name string, args ...interface{}) js.Value {
 	}
 
 	// undefined / null check
-	if parent == js.Undefined() || parent == js.Null() {
+	if parent.IsUndefined() || parent.IsNull() {
 		printLog("Error: could not call: '%s' on a parent which is undefined or null", name)
 
 		return parent
@@ -218,7 +218,7 @@ func (h *WasmHelper) Call(name string, args ...interface{}) js.Value {
 	function := parent.Get(funcName)
 
 	// undefined / null check
-	if function == js.Undefined() || function == js.Null() {
+	if function.IsUndefined() || function.IsNull() {
 		printLog("Error: could not call: '%s' which is undefined or null", funcName)
 
 		return function
@@ -244,7 +244,7 @@ func (h *WasmHelper) CallOn(obj js.Value, funcName string, args ...interface{}) 
 		printLog("Calling '%s' on %v with arguments: %s", funcName, obj, Prettify(args))
 	}
 
-	if obj == js.Undefined() || obj == js.Null() {
+	if obj.IsUndefined() || obj.IsNull() {
 		printLog("Error: could not call: '%s' on an object which is undefined or null", funcName)
 
 		return obj
@@ -253,7 +253,7 @@ func (h *WasmHelper) CallOn(obj js.Value, funcName string, args ...interface{}) 
 	function := obj.Get(funcName)
 
 	// undefined / null check
-	if function == js.Undefined() || function == js.Null() {
+	if function.IsUndefined() || function.IsNull() {
 		printLog("Error: could not call '%s' on %v which is undefined or null", funcName, obj)
 
 		return function
@@ -280,7 +280,7 @@ func (h *WasmHelper) Invoke(function js.Value, args ...interface{}) js.Value {
 	}
 
 	// undefined / null check
-	if function == js.Undefined() || function == js.Null() {
+	if function.IsUndefined() || function.IsNull() {
 		printLog("Error: could not invoke %v which is undefined or null", function)
 
 		return function
@@ -308,7 +308,7 @@ func printLog(format string, v ...interface{}) {
 // ToArray converts given value to array (returns nil on error)
 func ToArray(value js.Value) []js.Value {
 	// undefined / null check
-	if value == js.Undefined() || value == js.Null() {
+	if value.IsUndefined() || value.IsNull() {
 		printLog("Error: could not convert undefined or nil value to array")
 
 		return nil
