@@ -1,6 +1,6 @@
 # wasm-helper-go
 
-WASM helper library for Golang.
+[Wasm](https://webassembly.org/) helper library for Golang.
 
 ## Usage
 
@@ -11,7 +11,7 @@ $ go get -u github.com/meinside/wasm-helper-go
 then
 
 ```go
-// +build: js,wasm
+// go:build js && wasm
 
 package main
 
