@@ -1,8 +1,9 @@
-// WASM helper library for Golang
-//
-// (open files with: `$ GOOS=js GOARCH=wasm vi __FILENAME__`)
+//go:build js && wasm
 
-// +build js,wasm
+// Wasm helper library for Golang
+//
+// NOTE: open related files with GOOS and GOARCH environment variables like:
+//    `$ GOOS=js GOARCH=wasm nvim __FILENAME__`
 
 package wasmhelper
 
@@ -21,7 +22,7 @@ type WasmHelper struct {
 }
 
 // WasmCallback function type
-type WasmCallback func(this js.Value, args []js.Value) interface{}
+type WasmCallback func(this js.Value, args []js.Value) any
 
 // New returns a new WasmHelper struct
 func New() *WasmHelper {
@@ -39,7 +40,8 @@ func (h *WasmHelper) SetVerbose(isVerbose bool) {
 // RegisterCallbacks registers given callback functions
 func (h *WasmHelper) RegisterCallbacks(callbacks map[string]WasmCallback) {
 	if h.verbose {
-		printLog("Registering callbacks: %s", Prettify(callbacks))
+		prettified, _ := Prettify(callbacks)
+		printLog("Registering callbacks: %s", prettified)
 	}
 
 	for name, callback := range callbacks {
@@ -56,10 +58,7 @@ func (h *WasmHelper) Wait() {
 	}
 
 	// wait...
-	select {
-	case <-h.block:
-		break
-	}
+	<-h.block
 
 	if h.verbose {
 		printLog("Stopped waiting")
@@ -108,7 +107,8 @@ func (h *WasmHelper) get(parent js.Value, names []string) (value js.Value, remai
 	// parent
 	if parent.IsUndefined() || parent.IsNull() {
 		if h.verbose {
-			printLog("Parent not given, using global for names: %s", Prettify(names))
+			prettified, _ := Prettify(names)
+			printLog("Parent not given, using global for names: %s", prettified)
 		}
 
 		parent = js.Global()
@@ -127,7 +127,8 @@ func (h *WasmHelper) get(parent js.Value, names []string) (value js.Value, remai
 	}
 
 	if h.verbose {
-		printLog("Recursing on child: %v with names: %s", child, Prettify(names[1:]))
+		prettified, _ := Prettify(names[1:])
+		printLog("Recursing on child: %v with names: %s", child, prettified)
 	}
 
 	// recurse
@@ -135,7 +136,7 @@ func (h *WasmHelper) get(parent js.Value, names []string) (value js.Value, remai
 }
 
 // Set sets value for given name (eg: 'document.someparent.somechild.value')
-func (h *WasmHelper) Set(name string, value interface{}) bool {
+func (h *WasmHelper) Set(name string, value any) bool {
 	if h.verbose {
 		printLog("Setting value: %v for name: '%s'", value, name)
 	}
@@ -174,7 +175,7 @@ func (h *WasmHelper) Set(name string, value interface{}) bool {
 }
 
 // SetOn sets value for given property name on given object
-func (h *WasmHelper) SetOn(obj js.Value, propertyName string, value interface{}) bool {
+func (h *WasmHelper) SetOn(obj js.Value, propertyName string, value any) bool {
 	if h.verbose {
 		printLog("Setting value: %v on %v for name: '%s'", value, obj, propertyName)
 	}
@@ -192,9 +193,10 @@ func (h *WasmHelper) SetOn(obj js.Value, propertyName string, value interface{})
 }
 
 // Call calls a function with given name and arguments
-func (h *WasmHelper) Call(name string, args ...interface{}) js.Value {
+func (h *WasmHelper) Call(name string, args ...any) js.Value {
 	if h.verbose {
-		printLog("Calling '%s' with arguments: %s", name, Prettify(args))
+		prettified, _ := Prettify(args)
+		printLog("Calling '%s' with arguments: %s", name, prettified)
 	}
 
 	names := strings.Split(name, ".")
@@ -232,16 +234,18 @@ func (h *WasmHelper) Call(name string, args ...interface{}) js.Value {
 	}
 
 	if h.verbose {
-		printLog("Calling '%s' on %v with arguments: %s", funcName, parent, Prettify(args))
+		prettified, _ := Prettify(args)
+		printLog("Calling '%s' on %v with arguments: %s", funcName, parent, prettified)
 	}
 
 	return parent.Call(funcName, args...)
 }
 
 // CallOn calls a function on a object with given name and arguments
-func (h *WasmHelper) CallOn(obj js.Value, funcName string, args ...interface{}) js.Value {
+func (h *WasmHelper) CallOn(obj js.Value, funcName string, args ...any) js.Value {
 	if h.verbose {
-		printLog("Calling '%s' on %v with arguments: %s", funcName, obj, Prettify(args))
+		prettified, _ := Prettify(args)
+		printLog("Calling '%s' on %v with arguments: %s", funcName, obj, prettified)
 	}
 
 	if obj.IsUndefined() || obj.IsNull() {
@@ -267,16 +271,18 @@ func (h *WasmHelper) CallOn(obj js.Value, funcName string, args ...interface{}) 
 	}
 
 	if h.verbose {
-		printLog("Calling '%s' on %v with arguments: %s", funcName, obj, Prettify(args))
+		prettified, _ := Prettify(args)
+		printLog("Calling '%s' on %v with arguments: %s", funcName, obj, prettified)
 	}
 
 	return obj.Call(funcName, args...)
 }
 
 // Invoke invokes given function with arguments
-func (h *WasmHelper) Invoke(function js.Value, args ...interface{}) js.Value {
+func (h *WasmHelper) Invoke(function js.Value, args ...any) js.Value {
 	if h.verbose {
-		printLog("Invoking %v with arguments: %s", function, Prettify(args))
+		prettified, _ := Prettify(args)
+		printLog("Invoking %v with arguments: %s", function, prettified)
 	}
 
 	// undefined / null check
@@ -294,24 +300,23 @@ func (h *WasmHelper) Invoke(function js.Value, args ...interface{}) js.Value {
 	}
 
 	if h.verbose {
-		printLog("Invoking %v arguments: %s", function, Prettify(args))
+		prettified, _ := Prettify(args)
+		printLog("Invoking %v arguments: %s", function, prettified)
 	}
 
 	return function.Invoke(args...)
 }
 
 // print log to the console
-func printLog(format string, v ...interface{}) {
+func printLog(format string, v ...any) {
 	log.Printf(format, v...)
 }
 
-// ToArray converts given value to array (returns nil on error)
-func ToArray(value js.Value) []js.Value {
+// ToArray converts given value to an array.
+func ToArray(value js.Value) ([]js.Value, error) {
 	// undefined / null check
 	if value.IsUndefined() || value.IsNull() {
-		printLog("Error: could not convert undefined or nil value to array")
-
-		return nil
+		return nil, fmt.Errorf("cannot convert undefined or nil value to an array")
 	}
 
 	array := make([]js.Value, value.Length())
@@ -319,18 +324,16 @@ func ToArray(value js.Value) []js.Value {
 		array[i] = value.Index(i)
 	}
 
-	return array
+	return array, nil
 }
 
-// Prettify returns JSONized string of given value
-func Prettify(value interface{}) string {
+// Prettify returns a JSONized string of given value.
+func Prettify(value any) (string, error) {
 	var bytes []byte
 	var err error
 	if bytes, err = json.Marshal(value); err != nil {
-		printLog("Failed to marshal given value: %+v", value)
-
-		return fmt.Sprintf("%v", value)
+		return fmt.Sprintf("%v", value), fmt.Errorf("failed to marshal given value: %s", err)
 	}
 
-	return string(bytes)
+	return string(bytes), nil
 }
