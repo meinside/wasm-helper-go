@@ -17,6 +17,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"syscall/js"
 
 	wh "github.com/meinside/wasm-helper-go"
@@ -32,22 +33,26 @@ func main() {
 	helper := wh.New()
 	helper.SetVerbose(debug) // set verbosity,
 
-	// set callback functions
+	// register callback functions
 	helper.RegisterCallbacks(map[string]wh.WasmCallback{
 		"showAlert": func(this js.Value, args []js.Value) interface{} {
-			helper.Call("alert", args[0].String())
+			if _, err := helper.Call("alert", args[0].String()); err != nil {
+				log.Printf("failed to call function `alert`: %s", err)
+			}
 
 			return nil
 		},
 	})
 
 	// alert window location,
-	var windowLocation = "unknown"
-	location := helper.Get("window.location")
-	if !location.IsUndefined() && !location.IsNull() {
-		windowLocation = location.String()
+	if location, err := helper.Get("window.location.href"); err == nil {
+		if !location.IsUndefined() && !location.IsNull() {
+			loc := location.String()
 
-		helper.Call("showAlert", fmt.Sprintf("window.location = %s", windowLocation))
+			if _, err := helper.Call("showAlert", fmt.Sprintf("window.location.href = %s", loc)); err != nil {
+				log.Printf("failed to call function `showAlert`: %s", err)
+			}
+		}
 	}
 
 	// and wait...
