@@ -38,8 +38,8 @@ func main() {
 		log.Printf("failed to get window.location.href: %s", err)
 	}
 
-	// register callback functions,
-	helper.RegisterCallbacks(map[string]wh.WasmCallback{
+	// register functions,
+	helper.RegisterFunctions(map[string]wh.WasmFunction{
 		"initializeCounter": func(this js.Value, args []js.Value) any {
 			// set initial counter value,
 			if err := helper.Set("count", 0); err != nil {

@@ -12,22 +12,27 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"syscall/js"
 )
 
 // WasmHelper struct
 type WasmHelper struct {
-	block   chan struct{}
+	block chan struct{}
+	funcs map[string]js.Func
+	lock  sync.Mutex
+
 	verbose bool
 }
 
-// WasmCallback function type
-type WasmCallback func(this js.Value, args []js.Value) any
+// WasmFunction function type
+type WasmFunction func(this js.Value, args []js.Value) any
 
 // New returns a new WasmHelper struct.
 func New() *WasmHelper {
 	return &WasmHelper{
 		block:   make(chan struct{}, 1),
+		funcs:   make(map[string]js.Func),
 		verbose: false,
 	}
 }
@@ -37,17 +42,57 @@ func (h *WasmHelper) SetVerbose(isVerbose bool) {
 	h.verbose = isVerbose
 }
 
-// RegisterCallbacks registers given callback functions.
-func (h *WasmHelper) RegisterCallbacks(callbacks map[string]WasmCallback) {
+// RegisterFunctions registers given functions.
+func (h *WasmHelper) RegisterFunctions(fns map[string]WasmFunction) {
 	if h.verbose {
-		prettified, _ := Prettify(callbacks)
-		printLog("Registering callbacks: %s", prettified)
+		prettified, _ := Prettify(fns)
+
+		l("Registering functions: %s", prettified)
 	}
 
-	for name, callback := range callbacks {
-		if err := h.Set(name, js.FuncOf(callback)); err != nil && h.verbose {
-			printLog("Failed to register callback for name '%s': %s", name, err)
+	for name, fn := range fns {
+		f := js.FuncOf(fn)
+
+		h.lock.Lock()
+
+		if err := h.Set(name, f); err == nil {
+			h.funcs[name] = f
+		} else if h.verbose {
+			l("Failed to register function for name '%s': %s", name, err)
 		}
+
+		h.lock.Unlock()
+	}
+}
+
+// UnregisterFunctions releases registered functions.
+func (h *WasmHelper) UnregisterFunctions(names []string) {
+	if h.verbose {
+		prettified, _ := Prettify(names)
+
+		l("Unregistering functions with names: %s", prettified)
+	}
+
+	for _, name := range names {
+		h.lock.Lock()
+
+		if fn, err := h.Get(name); err == nil {
+			if fn.Type() == js.TypeFunction {
+				if f, exists := h.funcs[name]; exists {
+					f.Release()
+
+					delete(h.funcs, name)
+				} else {
+					l("Failed to get registered function for name '%s'", name)
+				}
+			} else {
+				l("Retrieved value '%s' is not a function.", name)
+			}
+		} else if h.verbose {
+			l("Failed to get function for name '%s': %s", name, err)
+		}
+
+		h.lock.Unlock()
 	}
 }
 
@@ -56,21 +101,21 @@ func (h *WasmHelper) RegisterCallbacks(callbacks map[string]WasmCallback) {
 // May panic when there is no registered callback or event listener.
 func (h *WasmHelper) Wait() {
 	if h.verbose {
-		printLog("Waiting...")
+		l("Waiting...")
 	}
 
 	// wait...
 	<-h.block
 
 	if h.verbose {
-		printLog("Stopped waiting")
+		l("Stopped waiting")
 	}
 }
 
 // Stop stops blocking.
 func (h *WasmHelper) Stop() {
 	if h.verbose {
-		printLog("Stopping waiting...")
+		l("Stopping waiting...")
 	}
 
 	h.block <- struct{}{}
@@ -81,7 +126,7 @@ func (h *WasmHelper) Stop() {
 // (eg: name = "document.someparent.somechild.value")
 func (h *WasmHelper) Get(name string) (js.Value, error) {
 	if h.verbose {
-		printLog("Getting value for name: '%s'", name)
+		l("Getting value for name: '%s'", name)
 	}
 
 	names := strings.Split(name, ".")
@@ -91,7 +136,7 @@ func (h *WasmHelper) Get(name string) (js.Value, error) {
 		value, _ := h.get(js.Null(), names)
 
 		if h.verbose {
-			printLog("Got value: %+v for name: '%s'", value, name)
+			l("Got value: %+v for name: '%s'", value, name)
 		}
 
 		return value, nil
@@ -110,7 +155,7 @@ func (h *WasmHelper) get(parent js.Value, names []string) (value js.Value, remai
 	if parent.IsUndefined() || parent.IsNull() {
 		if h.verbose {
 			prettified, _ := Prettify(names)
-			printLog("Parent not given, using global for names: %s", prettified)
+			l("Parent not given, using global for names: %s", prettified)
 		}
 
 		parent = js.Global()
@@ -119,18 +164,18 @@ func (h *WasmHelper) get(parent js.Value, names []string) (value js.Value, remai
 	// child
 	child := parent.Get(names[0])
 	if child.IsUndefined() {
-		printLog("Error: '%s' is undefined", names[0])
+		l("Error: '%s' is undefined", names[0])
 
 		return child, nil
 	} else if child.IsNull() {
-		printLog("Error: '%s' is null", names[0])
+		l("Error: '%s' is null", names[0])
 
 		return child, nil
 	}
 
 	if h.verbose {
 		prettified, _ := Prettify(names[1:])
-		printLog("Recursing on child: %+v with names: %s", child, prettified)
+		l("Recursing on child: %+v with names: %s", child, prettified)
 	}
 
 	// recurse
@@ -140,7 +185,7 @@ func (h *WasmHelper) get(parent js.Value, names []string) (value js.Value, remai
 // Set sets value for given name. (eg: 'document.someparent.somechild.value')
 func (h *WasmHelper) Set(name string, value any) error {
 	if h.verbose {
-		printLog("Setting value: %+v for name: '%s'", value, name)
+		l("Setting value: %+v for name: '%s'", value, name)
 	}
 
 	names := strings.Split(name, ".")
@@ -175,7 +220,7 @@ func (h *WasmHelper) Set(name string, value any) error {
 // SetOn sets value for given property name on given object.
 func (h *WasmHelper) SetOn(obj js.Value, propertyName string, value any) error {
 	if h.verbose {
-		printLog("Setting value: %+v on %+v for name: '%s'", value, obj, propertyName)
+		l("Setting value: %+v on %+v for name: '%s'", value, obj, propertyName)
 	}
 
 	// undefined / null check
@@ -192,7 +237,7 @@ func (h *WasmHelper) SetOn(obj js.Value, propertyName string, value any) error {
 func (h *WasmHelper) Call(name string, args ...any) (js.Value, error) {
 	if h.verbose {
 		prettified, _ := Prettify(args)
-		printLog("Calling '%s' with arguments: %s", name, prettified)
+		l("Calling '%s' with arguments: %s", name, prettified)
 	}
 
 	names := strings.Split(name, ".")
@@ -225,7 +270,7 @@ func (h *WasmHelper) Call(name string, args ...any) (js.Value, error) {
 
 	if h.verbose {
 		prettified, _ := Prettify(args)
-		printLog("Calling '%s' on %+v with arguments: %s", funcName, parent, prettified)
+		l("Calling '%s' on %+v with arguments: %s", funcName, parent, prettified)
 	}
 
 	return parent.Call(funcName, args...), nil
@@ -235,7 +280,7 @@ func (h *WasmHelper) Call(name string, args ...any) (js.Value, error) {
 func (h *WasmHelper) CallOn(obj js.Value, funcName string, args ...any) (js.Value, error) {
 	if h.verbose {
 		prettified, _ := Prettify(args)
-		printLog("Calling '%s' on %+v with arguments: %s", funcName, obj, prettified)
+		l("Calling '%s' on %+v with arguments: %s", funcName, obj, prettified)
 	}
 
 	if obj.IsUndefined() || obj.IsNull() {
@@ -256,7 +301,7 @@ func (h *WasmHelper) CallOn(obj js.Value, funcName string, args ...any) (js.Valu
 
 	if h.verbose {
 		prettified, _ := Prettify(args)
-		printLog("Calling '%s' on %+v with arguments: %s", funcName, obj, prettified)
+		l("Calling '%s' on %+v with arguments: %s", funcName, obj, prettified)
 	}
 
 	return obj.Call(funcName, args...), nil
@@ -266,7 +311,7 @@ func (h *WasmHelper) CallOn(obj js.Value, funcName string, args ...any) (js.Valu
 func (h *WasmHelper) Invoke(function js.Value, args ...any) (js.Value, error) {
 	if h.verbose {
 		prettified, _ := Prettify(args)
-		printLog("Invoking %+v with arguments: %s", function, prettified)
+		l("Invoking %+v with arguments: %s", function, prettified)
 	}
 
 	// undefined / null check
@@ -281,14 +326,15 @@ func (h *WasmHelper) Invoke(function js.Value, args ...any) (js.Value, error) {
 
 	if h.verbose {
 		prettified, _ := Prettify(args)
-		printLog("Invoking %+v arguments: %s", function, prettified)
+
+		l("Invoking %+v arguments: %s", function, prettified)
 	}
 
 	return function.Invoke(args...), nil
 }
 
 // print log to the console
-func printLog(format string, v ...any) {
+func l(format string, v ...any) {
 	log.Printf(format, v...)
 }
 
