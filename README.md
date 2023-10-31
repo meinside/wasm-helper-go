@@ -33,8 +33,8 @@ func main() {
 	helper := wh.New()
 	helper.SetVerbose(debug) // set verbosity,
 
-	// register callback functions
-	helper.RegisterCallbacks(map[string]wh.WasmCallback{
+	// register functions for using in javascript
+	helper.RegisterFunctions(map[string]wh.WasmFunction{
 		"showAlert": func(this js.Value, args []js.Value) interface{} {
 			if _, err := helper.Call("alert", args[0].String()); err != nil {
 				log.Printf("failed to call function `alert`: %s", err)
