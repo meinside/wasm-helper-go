@@ -6,7 +6,7 @@ Sample codes for [wasm-helper-go](https://github.com/meinside/wasm-helper-go).
 
 - `main.go`: source code of the sample application
 - `index.html`: html file that will load the compiled wasm file
-- `wasm_exec.js`: wasm bridge script copied from `$(go env GOROOT)/misc/wasm/wasm_exec.js`
+- `wasm_exec.js`: wasm bridge script copied from `$(go env GOROOT)/lib/wasm/wasm_exec.js`
 
 ## Build
 
