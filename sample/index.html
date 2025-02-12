@@ -1,12 +1,14 @@
 <html>
+  <!-- referenced from: https://go.dev/wiki/WebAssembly -->
   <head>
+    <meta charset="utf-8"/>
     <title>Sample Page for wasm-helper</title>
 
     <!-- BEGIN: for Wasm -->
-    <script src="wasm_exec.js"></script>  <!-- copied with `cp $(go env GOROOT)/lib/wasm/wasm_exec.js ./` (go 1.24.0) -->
+    <script src="wasm_exec.js"></script>  <!-- NOTE: copied with `cp $(go env GOROOT)/lib/wasm/wasm_exec.js ./` (go 1.24.0) -->
     <script type="text/javascript">
       const go = new Go();
-      WebAssembly.instantiateStreaming(fetch("/sample.wasm"), go.importObject).then((result) => {
+      WebAssembly.instantiateStreaming(fetch("sample.wasm"), go.importObject).then((result) => {
         go.run(result.instance);
       });
     </script>
